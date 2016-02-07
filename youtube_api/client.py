@@ -67,8 +67,6 @@ class Client(object):
         if not intersection:
              raise FilterNotAllowed('{0} is not an allowed filter'.format(resource_filter.keys()))
 
-
-
     def validate_parts(self, parts):
         frozen_parts = frozenset(parts) # free in Python 3.x
         frozen_allowed_parts = frozenset(self.allowed_parts.keys()) # free in Python 3.x
@@ -110,7 +108,8 @@ class VideoAPI(Client):
         self.allowed_filters = frozenset(('chart',
                                 'id',
                                 'myRating'))
-        self.allowed_optional_params = frozenset(('maxResults',
+        self.allowed_optional_params = frozenset(('h1'
+                                        'maxResults',
                                         'onBehalfOfContentOwner',
                                         'pageToken',
                                         'regionCode',
@@ -147,5 +146,68 @@ class VideoAPI(Client):
         """
         return self.get_videos(resource_filter={'id': video_id}, parts=parts, optional_params=optional_params)
 
+    def get_video_chart(self, chart, parts=('snippet',), optional_params={}):
+        """
+        Returns a list of videos based on the particular chart
 
+        :param chart: string
+        :param parts: tuple of strings https://developers.google.com/youtube/v3/getting-started#part
+        :param optional_params: dictionary, usually filter params
+        :return: serialised json response
+        """
+        return self.get_videos(resource_filter={'chart': chart}, parts=parts, optional_params=optional_params)
 
+class ChannelsAPI(Client):
+    """
+    Channels endpoint https://developers.google.com/youtube/v3/docs/channels/
+    """
+    def __init__(self, api_key):
+        super(ChannelsAPI, self).__init__(api_key)
+        self.resource_type = "channels"
+        self.allowed_parts = {'auditDetails': 4,
+                              'brandingSettings': 2,
+                              'contentDetails': 2,
+                              'contentOwnerDetails': 2,
+                              'id': 0,
+                              'invideoPromotion': 2,
+                              'localizations': 2,
+                              'snippet': 2,
+                              'statistics': 2,
+                              'status': 2,
+                              'topicDetails': 2}
+        self.allowed_filters = frozenset(('categoryId', 'forUsername',
+            'id', 'managedByMe', 'mine'))
+        self.allowed_optional_params = frozenset(('h1'
+                                        'maxResults',
+                                        'onBehalfOfContentOwner',
+                                        'pageToken'))
+    def calculate_quota(self, parts):
+        """
+        Returns the quota used for the
+        :param parts: Parts to be checked
+        :return: Quota used
+        """
+        return sum((self.allowed_parts[part] for part in parts))
+
+    def get_channels(self, resource_filter, parts, optional_params):
+        """
+        Get info for channels resource
+
+        :param resource_filter: dictionary with one key:value pair only
+        :param parts: tuple of strings https://developers.google.com/youtube/v3/getting-started#part
+        :param optional_params: dictionary, usually filter params
+        :return: serialised json response
+        """
+        response = self.get_resource(resource_filter, parts, optional_params=optional_params)
+        return response.json()
+
+    def get_channel_by_username(self, username, parts=('snippet',), optional_params={}):
+        """
+        Returns a list of channels based on the particular username
+
+        :param username: string
+        :param parts: tuple of strings https://developers.google.com/youtube/v3/getting-started#part
+        :param optional_params: dictionary, usually filter params
+        :return: serialised json response
+        """
+        return self.get_channels(resource_filter={'forUsername': username}, parts=parts, optional_params=optional_params)
